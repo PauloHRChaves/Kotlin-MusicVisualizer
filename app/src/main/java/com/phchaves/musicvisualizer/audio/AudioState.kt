@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 object AudioState {
     // Armazena uma lista com as 16 bandas do espectro
-    private val _espectro = MutableStateFlow(FloatArray(16))
+    private val _espectro = MutableStateFlow(FloatArray(10))
     val espectro = _espectro.asStateFlow()
 
     private val _volume = MutableStateFlow(0f)

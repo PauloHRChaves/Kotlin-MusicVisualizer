@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.pow
 
 class AudioCaptureManager {
-    private val bandasSuaves = FloatArray(16)
+    private val bandasSuaves = FloatArray(10)
     private var ganhoAdaptativo = 1.0f
 
     private var audioRecord: AudioRecord? = null
@@ -99,12 +99,11 @@ class AudioCaptureManager {
                             // CHAMADA do FFTProcessor
                             val magnitudes = FftProcessor.calcular(fftInput)
 
-                            val numBandas = 16
+                            val numBandas = 10
                             val bandasBrutas = FloatArray(numBandas)
 
                             val limitesFrequencia = intArrayOf(
-                                1,   2,   3,   5,   7,   11,  16,  24,
-                                35,  51,  75,  110, 161, 236, 346, 512
+                                2,   4,   7,   13,  23,  40,  70,  122, 250, 512
                             )
 
                             var maiorFrequenciaDoMomento = 0.0f
@@ -124,10 +123,12 @@ class AudioCaptureManager {
                                 if (contagem > 0) {
                                     val media = soma / contagem
 
-                                    val ganhoAgudos = 1.35.pow(b.toDouble()).toFloat()
+                                    // Curva de agudos suavizada para 10 bandas
+                                    val ganhoAgudos = 1.20.pow(b.toDouble()).toFloat()
                                     val equalizacaoOuvido = 1.0f * ganhoAgudos
 
-                                    bandasBrutas[b] = media * equalizacaoOuvido
+                                    val sinalLinear = media * equalizacaoOuvido
+                                    bandasBrutas[b] = kotlin.math.sqrt(sinalLinear.toDouble()).toFloat() * 0.5f
 
                                     if (bandasBrutas[b] > maiorFrequenciaDoMomento) {
                                         maiorFrequenciaDoMomento = bandasBrutas[b]
@@ -135,10 +136,11 @@ class AudioCaptureManager {
                                 }
                             }
 
-                            if (maiorFrequenciaDoMomento * ganhoAdaptativo > 1.0f) {
-                                ganhoAdaptativo -= (ganhoAdaptativo - (1.0f / maiorFrequenciaDoMomento)) * 0.4f
+                            // GANHO AUTOMÁTICO ADAPTATIVO MAIS AGRESSIVO
+                            if (maiorFrequenciaDoMomento * ganhoAdaptativo > 1.1f) {
+                                ganhoAdaptativo -= (ganhoAdaptativo - (1.1f / maiorFrequenciaDoMomento)) * 0.7f
                             } else {
-                                ganhoAdaptativo += (1.0f - (maiorFrequenciaDoMomento * ganhoAdaptativo)) * 0.005f
+                                ganhoAdaptativo += (1.1f - (maiorFrequenciaDoMomento * ganhoAdaptativo)) * 0.01f
                             }
                             ganhoAdaptativo = ganhoAdaptativo.coerceIn(0.01f, 30.0f)
 
@@ -147,15 +149,19 @@ class AudioCaptureManager {
                                 var valorNormalizado = bandasBrutas[b] * ganhoAdaptativo
 
                                 // COMPRESSÃO DE TETO (Atenuação logarítmica suave para não bater em 1.00 direto)
-                                if (valorNormalizado > 0.7f) {
-                                    valorNormalizado = 0.7f + ((valorNormalizado - 0.7f) * 0.4f)
+                                if (valorNormalizado > 0.5f) {
+                                    if (valorNormalizado > 0.8f) {
+                                        valorNormalizado = 0.68f + ((valorNormalizado - 0.8f) * 0.35f)
+                                    } else {
+                                        valorNormalizado = 0.5f + ((valorNormalizado - 0.5f) * 0.6f)
+                                    }
                                 }
 
-                                // Suavidade de decaimento (amortecimento de queda ligeiramente mais rápido: 0.3f)
+                                // Suavidade de decaimento
                                 if (valorNormalizado > bandasSuaves[b]) {
                                     bandasSuaves[b] = valorNormalizado
                                 } else {
-                                    bandasSuaves[b] -= (bandasSuaves[b] - valorNormalizado) * 0.3f
+                                    bandasSuaves[b] -= (bandasSuaves[b] - valorNormalizado) * 0.25f
                                 }
 
                                 // Trava de segurança final

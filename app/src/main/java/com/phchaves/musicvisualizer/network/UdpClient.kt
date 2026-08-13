@@ -8,7 +8,7 @@ object UdpClient {
     private var socket: DatagramSocket? = null
     private var address: InetAddress? = null
     private const val PORT = 1234
-    private const val ESP32_IP = "xxx.xxx.x.xxx"
+    private const val ESP32_IP = "192.168.4.1"
 
     fun inicializar() {
         if (socket == null) {

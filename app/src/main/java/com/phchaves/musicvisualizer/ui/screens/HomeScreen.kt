@@ -25,8 +25,8 @@ fun HomeScreen(
     val volume by vm.volume.collectAsState()
     val espectro by vm.espectro.collectAsState()
 
-    val totalSegments = 18
-    val picosAtuais = remember { mutableStateOf(FloatArray(16)) }
+    val totalSegments = 30
+    val picosAtuais = remember { mutableStateOf(FloatArray(10)) }
     val tempoUltimaAtualizacao = remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     val tempoAnimacao = rememberInfiniteTransition(label = "RainbowTime")
@@ -113,7 +113,7 @@ fun HomeScreen(
                             // Se esta linha for exatamente a linha do pico e estiver acima da onda atual, desenha o pixel roxo
                             if (linha == linhaDoPicoRoxo && linha >= segmentosAcesos && picosAtuais.value[col] > 0.02f) {
                                 drawRect(
-                                    color = Color(0xFF9C27B0),
+                                    color = Color(0xFF9C27B0), // roxo
                                     topLeft = androidx.compose.ui.geometry.Offset(0f, posY),
                                     size = androidx.compose.ui.geometry.Size(larguraBarra, alturaSegmento)
                                 )
@@ -127,11 +127,14 @@ fun HomeScreen(
         Spacer(Modifier.height(40.dp))
 
         Button(
-            modifier = Modifier.width(120.dp),
+            modifier = Modifier.width(200.dp),
             onClick = { onStartCapture() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Green)
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C9200))
         ) {
-            Text("Iniciar captura")
+            Text(
+                text = "Iniciar Captura",
+                color = Color(0xFFF5F5F5) // cinza claro
+            )
         }
 
         Spacer(Modifier.height(16.dp))
@@ -141,7 +144,10 @@ fun HomeScreen(
             onClick = { vm.stopCapture() },
             colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
         ) {
-            Text("Parar")
+            Text(
+                text = "Parar",
+                color = Color(0xFFF5F5F5) // cinza claro
+            )
         }
     }
 }
